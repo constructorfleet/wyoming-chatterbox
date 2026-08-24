@@ -106,6 +106,7 @@ class ChatterboxEventHandler(AsyncEventHandler):
         if event.name in self._backends:
             self._active_variant = event.name
             # Re-point the shared pipeline to the newly selected backend.
+            self._pipeline.close()
             self._pipeline = SynthesisPipeline(
                 self._backends[event.name], self._settings, self._voice_manager
             )
