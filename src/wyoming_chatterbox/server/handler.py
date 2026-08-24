@@ -49,6 +49,10 @@ class ChatterboxEventHandler(AsyncEventHandler):
         self._settings = settings
         self._voice_manager = voice_manager
         self._active_variant = default_variant
+        # Create one pipeline per connection — the pipeline's ThreadPoolExecutor is
+        # reused across requests on the same connection instead of being torn down
+        # after every synthesis call.
+        self._pipeline = SynthesisPipeline(backends[default_variant], settings, voice_manager)
 
     async def handle_event(self, event: Event) -> bool:
         if Describe.is_type(event.type):
@@ -101,6 +105,10 @@ class ChatterboxEventHandler(AsyncEventHandler):
     async def _handle_select_program(self, event: SelectProgram) -> None:
         if event.name in self._backends:
             self._active_variant = event.name
+            # Re-point the shared pipeline to the newly selected backend.
+            self._pipeline = SynthesisPipeline(
+                self._backends[event.name], self._settings, self._voice_manager
+            )
             logger.debug("Selected program %s", event.name)
         else:
             await self.write_event(Error(text=f"Unknown program: {event.name}").event())
@@ -108,13 +116,10 @@ class ChatterboxEventHandler(AsyncEventHandler):
     # -- synthesize -------------------------------------------------------
 
     async def _handle_synthesize(self, event: Synthesize) -> None:
-        pipeline: SynthesisPipeline | None = None
         try:
             backend = self._backends[self._active_variant]
             if not backend.is_loaded:
                 backend.load()
-
-            pipeline = SynthesisPipeline(backend, self._settings, self._voice_manager)
 
             voice = None
             language = self._settings.chatterbox_default_language
@@ -128,7 +133,7 @@ class ChatterboxEventHandler(AsyncEventHandler):
             sample_rate = backend.sample_rate
             await self.write_event(AudioStart(rate=sample_rate, width=2, channels=1).event())
 
-            async for chunk in pipeline.synthesize_stream(
+            async for chunk in self._pipeline.synthesize_stream(
                 event.text, voice=voice, language=language
             ):
                 if not chunk:
@@ -141,6 +146,3 @@ class ChatterboxEventHandler(AsyncEventHandler):
         except Exception as exc:  # noqa: BLE001 - report all failures to client
             logger.exception("Synthesis error")
             await self.write_event(Error(text=str(exc)).event())
-        finally:
-            if pipeline is not None:
-                pipeline.close()

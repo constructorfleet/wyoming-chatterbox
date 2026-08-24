@@ -26,7 +26,13 @@ _CLAUSE_ENDINGS = (",", ";", ":")
 
 
 def _apply_seed(seed: int) -> None:
-    """Best-effort deterministic seeding of torch/numpy."""
+    """Best-effort deterministic seeding.
+
+    Seeds torch's global RNG (safe because the backend lock serialises inference).
+    The global numpy state is intentionally left untouched to avoid races between
+    concurrent worker threads; callers that need numpy randomness should use a
+    local ``np.random.default_rng(seed)`` instance.
+    """
     try:
         import torch
 
@@ -35,7 +41,6 @@ def _apply_seed(seed: int) -> None:
             torch.cuda.manual_seed_all(seed)
     except Exception:  # pragma: no cover - torch missing
         pass
-    np.random.seed(seed % (2**32))
 
 
 class SynthesisPipeline:

@@ -3,19 +3,27 @@
 from __future__ import annotations
 
 import asyncio
+import socket
 
 import numpy as np
 import pytest
+from conftest import FakeBackend
 from wyoming.audio import AudioChunk, AudioStart, AudioStop
 from wyoming.client import AsyncTcpClient
 from wyoming.info import Describe, Info, SelectProgram
 from wyoming.server import AsyncTcpServer
 from wyoming.tts import Synthesize, SynthesizeVoice
 
-from conftest import FakeBackend
 from wyoming_chatterbox.config import Settings
 from wyoming_chatterbox.server.handler import ChatterboxEventHandler
 from wyoming_chatterbox.voices.manager import VoiceManager
+
+
+def _free_port() -> int:
+    """Return an OS-assigned free TCP port on localhost."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
 
 
 @pytest.fixture
@@ -44,10 +52,9 @@ async def _start_server(settings):
     def factory(reader, writer):
         return ChatterboxEventHandler(reader, writer, backends, settings, voice_manager, "standard")
 
-    # Use the public start() API with an OS-assigned port.
-    server = AsyncTcpServer(host="127.0.0.1", port=0)
+    port = _free_port()
+    server = AsyncTcpServer(host="127.0.0.1", port=port)
     await server.start(factory)
-    port = server._server.sockets[0].getsockname()[1]
     return server, port, backend
 
 
