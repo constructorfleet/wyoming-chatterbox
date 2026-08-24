@@ -44,29 +44,19 @@ async def _start_server(settings):
     def factory(reader, writer):
         return ChatterboxEventHandler(reader, writer, backends, settings, voice_manager, "standard")
 
+    # Use the public start() API with an OS-assigned port.
     server = AsyncTcpServer(host="127.0.0.1", port=0)
-    # Use asyncio directly to obtain the bound ephemeral port.
-    from functools import partial
-
-    handler_cb = partial(server._handler_callback, factory)
-    aio_server = await asyncio.start_server(handler_cb, host="127.0.0.1", port=0)
-    server._server = aio_server
-    port = aio_server.sockets[0].getsockname()[1]
-    serve_task = asyncio.ensure_future(aio_server.serve_forever())
-    return server, port, serve_task, backend
+    await server.start(factory)
+    port = server._server.sockets[0].getsockname()[1]
+    return server, port, backend
 
 
-async def _shutdown(server, serve_task):
-    server._server.close()
-    serve_task.cancel()
-    try:
-        await serve_task
-    except asyncio.CancelledError:
-        pass
+async def _shutdown(server):
+    await server.stop()
 
 
 async def test_describe_returns_info(server_settings):
-    server, port, serve_task, _ = await _start_server(server_settings)
+    server, port, _ = await _start_server(server_settings)
     try:
         async with AsyncTcpClient("127.0.0.1", port) as client:
             await client.write_event(Describe().event())
@@ -80,11 +70,11 @@ async def test_describe_returns_info(server_settings):
             voice_names = [v.name for v in program.voices]
             assert "alice" in voice_names
     finally:
-        await _shutdown(server, serve_task)
+        await _shutdown(server)
 
 
 async def test_synthesize_streams_audio(server_settings):
-    server, port, serve_task, _ = await _start_server(server_settings)
+    server, port, _ = await _start_server(server_settings)
     try:
         async with AsyncTcpClient("127.0.0.1", port) as client:
             await client.write_event(Synthesize(text="Hello world. This is a test.").event())
@@ -110,11 +100,11 @@ async def test_synthesize_streams_audio(server_settings):
             samples = np.frombuffer(bytes(total), dtype="<i2")
             assert samples.dtype == np.int16
     finally:
-        await _shutdown(server, serve_task)
+        await _shutdown(server)
 
 
 async def test_select_program_then_synthesize(server_settings):
-    server, port, serve_task, _ = await _start_server(server_settings)
+    server, port, _ = await _start_server(server_settings)
     try:
         async with AsyncTcpClient("127.0.0.1", port) as client:
             await client.write_event(SelectProgram(name="standard").event())
@@ -134,4 +124,4 @@ async def test_select_program_then_synthesize(server_settings):
                     break
             assert saw_stop
     finally:
-        await _shutdown(server, serve_task)
+        await _shutdown(server)

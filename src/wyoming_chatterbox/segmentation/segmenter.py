@@ -107,7 +107,7 @@ class TextSegmenter:
         for match in re.finditer(r"[.!?]+[\"')\]]?(\s)", buffer):
             end = match.end()
             if self._is_valid_sentence_end(buffer, match.start()):
-                if end - 0 >= self.min_chars:
+                if end >= self.min_chars:
                     return end
 
         # 3. Semicolon / colon boundaries.

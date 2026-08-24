@@ -35,7 +35,7 @@ def _apply_seed(seed: int) -> None:
             torch.cuda.manual_seed_all(seed)
     except Exception:  # pragma: no cover - torch missing
         pass
-    np.random.seed(seed % (2**32 - 1))
+    np.random.seed(seed % (2**32))
 
 
 class SynthesisPipeline:
