@@ -12,7 +12,7 @@ from wyoming.info import Describe, Info, SelectProgram
 from wyoming.server import AsyncTcpServer
 from wyoming.tts import Synthesize, SynthesizeVoice
 
-from tests.conftest import FakeBackend
+from conftest import FakeBackend
 from wyoming_chatterbox.config import Settings
 from wyoming_chatterbox.server.handler import ChatterboxEventHandler
 from wyoming_chatterbox.voices.manager import VoiceManager
