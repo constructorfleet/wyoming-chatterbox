@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from wyoming_chatterbox.models.base import ChatterboxBackend
 
 from wyoming_chatterbox.config import Settings
-from wyoming_chatterbox.models.base import ChatterboxBackend
 
 
 class FakeBackend(ChatterboxBackend):
