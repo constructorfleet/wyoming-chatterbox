@@ -8,13 +8,13 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
+
+from wyoming_chatterbox.config import Settings
 from wyoming_chatterbox.models.factory import create_backend, resolve_device
 from wyoming_chatterbox.models.multilingual import MultilingualBackend
 from wyoming_chatterbox.models.nano import NanoBackend
 from wyoming_chatterbox.models.standard import StandardBackend
 from wyoming_chatterbox.models.turbo import TurboBackend
-
-from wyoming_chatterbox.config import Settings
 
 
 @pytest.fixture

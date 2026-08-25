@@ -28,12 +28,16 @@ CMD ["wyoming-chatterbox"]
 FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04 AS cuda
 ENV PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends python3.11 python3-pip \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3.11 python3.11-distutils python3-pip \
+    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
+    && update-alternatives --set python3 /usr/bin/python3.11 \
+    && python3 -m pip install --no-cache-dir --upgrade pip \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /build/dist/*.whl /tmp/
-RUN pip install --no-cache-dir /tmp/*.whl \
-    && pip install --no-cache-dir "torch>=2.0" --index-url https://download.pytorch.org/whl/cu121 \
+RUN python3 -m pip install --no-cache-dir /tmp/*.whl \
+    && python3 -m pip install --no-cache-dir "torch>=2.0" --index-url https://download.pytorch.org/whl/cu121 \
     && rm /tmp/*.whl
 RUN useradd -m -u 1000 chatterbox
 USER chatterbox

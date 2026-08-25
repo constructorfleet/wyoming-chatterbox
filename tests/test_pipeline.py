@@ -5,9 +5,9 @@ from __future__ import annotations
 import time
 
 import numpy as np
-from wyoming_chatterbox.models.base import ChatterboxBackend
 
 from wyoming_chatterbox.config import Settings
+from wyoming_chatterbox.models.base import ChatterboxBackend
 from wyoming_chatterbox.synthesis.pipeline import SynthesisPipeline
 
 
