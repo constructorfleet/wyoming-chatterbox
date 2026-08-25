@@ -53,7 +53,7 @@ class VoiceManager:
         try:
             candidate.relative_to(self._dir.resolve())
         except ValueError:
-            raise ValueError(f"Voice name {name!r} escapes the voices directory")
+            raise ValueError(f"Voice name {name!r} escapes the voices directory") from None
 
         if not candidate.is_file():
             raise FileNotFoundError(f"Voice file not found: {candidate}")
