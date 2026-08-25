@@ -11,5 +11,5 @@ venv/
 coverage.xml
 .pytest_cache/
 .ruff_cache/
-models/
-voices/
+/models/
+/voices/
