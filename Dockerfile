@@ -14,8 +14,8 @@ FROM python:${PYTHON_VERSION}-slim AS cpu
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 COPY --from=build /build/dist/*.whl /tmp/
-RUN pip install --no-cache-dir /tmp/*.whl \
-    && pip install --no-cache-dir "torch>=2.0" --index-url https://download.pytorch.org/whl/cpu \
+RUN pip install --no-cache-dir "torch>=2.0" --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir /tmp/*.whl chatterbox-tts \
     && rm /tmp/*.whl
 RUN useradd -m -u 1000 chatterbox
 USER chatterbox
@@ -36,8 +36,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /build/dist/*.whl /tmp/
-RUN python3 -m pip install --no-cache-dir /tmp/*.whl \
-    && python3 -m pip install --no-cache-dir "torch>=2.0" --index-url https://download.pytorch.org/whl/cu121 \
+RUN python3 -m pip install --no-cache-dir "torch>=2.0" --index-url https://download.pytorch.org/whl/cu121 \
+    && python3 -m pip install --no-cache-dir /tmp/*.whl chatterbox-tts \
     && rm /tmp/*.whl
 RUN useradd -m -u 1000 chatterbox
 USER chatterbox
