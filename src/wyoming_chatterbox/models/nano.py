@@ -21,4 +21,12 @@ class NanoBackend(TurboBackend):
     def load(self) -> None:
         from chatterbox.tts_turbo import ChatterboxTurboTTS  # lazy import
 
-        self._model = ChatterboxTurboTTS.from_pretrained(device=self._device, nano=True)
+        try:
+            self._model = ChatterboxTurboTTS.from_pretrained(device=self._device, nano=True)
+        except TypeError:
+            # chatterbox-tts < unreleased: from_pretrained() lacks nano param.
+            # Download the nano snapshot ourselves and use from_local().
+            from huggingface_hub import snapshot_download
+
+            local_path = snapshot_download(repo_id="ResembleAI/chatterbox-nano")
+            self._model = ChatterboxTurboTTS.from_local(local_path, device=self._device, nano=True)

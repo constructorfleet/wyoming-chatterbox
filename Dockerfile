@@ -16,7 +16,8 @@ ENV PYTHONUNBUFFERED=1 \
     HF_HOME=/models
 COPY --from=build /build/dist/*.whl /tmp/
 RUN pip install --no-cache-dir "torch>=2.0" --index-url https://download.pytorch.org/whl/cpu \
-    && pip install --no-cache-dir /tmp/*.whl chatterbox-tts \
+    && pip install --no-cache-dir /tmp/*.whl \
+        "chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git" \
     && rm /tmp/*.whl
 RUN useradd -m -u 1000 chatterbox
 USER chatterbox
@@ -39,7 +40,8 @@ RUN apt-get update \
 WORKDIR /app
 COPY --from=build /build/dist/*.whl /tmp/
 RUN python3 -m pip install --no-cache-dir "torch>=2.0" --index-url https://download.pytorch.org/whl/cu121 \
-    && python3 -m pip install --no-cache-dir /tmp/*.whl chatterbox-tts \
+    && python3 -m pip install --no-cache-dir /tmp/*.whl \
+        "chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git" \
     && rm /tmp/*.whl
 RUN useradd -m -u 1000 chatterbox
 USER chatterbox
