@@ -43,10 +43,7 @@ class MultilingualBackend(ChatterboxBackend):
     def load(self) -> None:
         from chatterbox.mtl_tts import ChatterboxMultilingualTTS  # lazy import
 
-        self._model = ChatterboxMultilingualTTS.from_pretrained(
-            device=self._device,
-            cache_dir=self._settings.chatterbox_cache_dir or None,
-        )
+        self._model = ChatterboxMultilingualTTS.from_pretrained(device=self._device)
 
     def unload(self) -> None:
         self._model = None

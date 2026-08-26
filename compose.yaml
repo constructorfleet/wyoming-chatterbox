@@ -12,6 +12,7 @@ services:
       - ./models:/models
       - ./voices:/voices
     environment:
+      HF_HOME: /models
       CHATTERBOX_VARIANT: multilingual
       CHATTERBOX_DEVICE: auto
       CHATTERBOX_STREAMING_MODE: segmented

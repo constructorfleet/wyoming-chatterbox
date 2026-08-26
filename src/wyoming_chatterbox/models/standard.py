@@ -30,10 +30,7 @@ class StandardBackend(ChatterboxBackend):
     def load(self) -> None:
         from chatterbox.tts import ChatterboxTTS  # lazy import — not available at test time
 
-        self._model = ChatterboxTTS.from_pretrained(
-            device=self._device,
-            cache_dir=self._settings.chatterbox_cache_dir or None,
-        )
+        self._model = ChatterboxTTS.from_pretrained(device=self._device)
 
     def unload(self) -> None:
         self._model = None
