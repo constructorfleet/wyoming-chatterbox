@@ -15,8 +15,11 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     HF_HOME=/models
 COPY --from=build /build/dist/*.whl /tmp/
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir "torch>=2.0" --index-url https://download.pytorch.org/whl/cpu \
-    && pip install --no-cache-dir /tmp/*.whl chatterbox-tts \
+    && pip install --no-cache-dir /tmp/*.whl \
+        "chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git" \
     && rm /tmp/*.whl
 RUN useradd -m -u 1000 chatterbox
 USER chatterbox
@@ -31,7 +34,7 @@ ENV PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     HF_HOME=/models
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3.11 python3.11-distutils python3-pip \
+    && apt-get install -y --no-install-recommends python3.11 python3.11-distutils python3-pip git \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
     && update-alternatives --set python3 /usr/bin/python3.11 \
     && python3 -m pip install --no-cache-dir --upgrade pip \
@@ -39,7 +42,8 @@ RUN apt-get update \
 WORKDIR /app
 COPY --from=build /build/dist/*.whl /tmp/
 RUN python3 -m pip install --no-cache-dir "torch>=2.0" --index-url https://download.pytorch.org/whl/cu121 \
-    && python3 -m pip install --no-cache-dir /tmp/*.whl chatterbox-tts \
+    && python3 -m pip install --no-cache-dir /tmp/*.whl \
+        "chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git" \
     && rm /tmp/*.whl
 RUN useradd -m -u 1000 chatterbox
 USER chatterbox
