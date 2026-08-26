@@ -12,7 +12,8 @@ RUN hatch build -t wheel
 # ==== CPU runtime ====
 FROM python:${PYTHON_VERSION}-slim AS cpu
 WORKDIR /app
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1 \
+    HF_HOME=/models
 COPY --from=build /build/dist/*.whl /tmp/
 RUN pip install --no-cache-dir "torch>=2.0" --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir /tmp/*.whl chatterbox-tts \
@@ -27,7 +28,8 @@ CMD ["wyoming-chatterbox"]
 # ==== CUDA runtime ====
 FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04 AS cuda
 ENV PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    HF_HOME=/models
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3.11 python3.11-distutils python3-pip \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \

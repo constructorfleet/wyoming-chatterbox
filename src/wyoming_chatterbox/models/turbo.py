@@ -15,14 +15,20 @@ _TURBO_MAX_CFG_WEIGHT: float = 0.3
 
 
 class TurboBackend(StandardBackend):
-    """Turbo variant — uses the standard TTS model with capped cfg_weight."""
+    """Turbo variant — uses ChatterboxTurboTTS with capped cfg_weight."""
 
     variant = "turbo"
 
     def __init__(self, device: str, settings: Settings) -> None:
         super().__init__(device, settings)
 
+    def load(self) -> None:
+        from chatterbox.tts_turbo import ChatterboxTurboTTS  # lazy import
+
+        self._model = ChatterboxTurboTTS.from_pretrained(device=self._device)
+
     def _build_generate_kwargs(self) -> dict[str, object]:
         kwargs = super()._build_generate_kwargs()
         kwargs["cfg_weight"] = min(float(kwargs["cfg_weight"]), _TURBO_MAX_CFG_WEIGHT)  # type: ignore[arg-type]
+        kwargs["top_k"] = self._settings.chatterbox_top_k
         return kwargs
