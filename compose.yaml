@@ -1,0 +1,27 @@
+services:
+  wyoming-chatterbox:
+    build:
+      context: .
+      target: cpu
+    image: ghcr.io/wyoming-chatterbox/wyoming-chatterbox:cpu
+    container_name: wyoming-chatterbox
+    restart: unless-stopped
+    ports:
+      - "10200:10200"
+    volumes:
+      - ./models:/models
+      - ./voices:/voices
+    environment:
+      CHATTERBOX_VARIANT: multilingual
+      CHATTERBOX_DEVICE: auto
+      CHATTERBOX_STREAMING_MODE: segmented
+      CHATTERBOX_DEFAULT_LANGUAGE: en
+      LOG_LEVEL: INFO
+    # For GPU acceleration, use target: cuda in build and uncomment below.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
