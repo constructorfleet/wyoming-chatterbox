@@ -147,13 +147,18 @@ class ChatterboxEventHandler(AsyncEventHandler):
             )
 
             sample_rate = backend.sample_rate
-            await self.write_event(AudioStart(rate=sample_rate, width=2, channels=1).event())
+            audio_started = False
 
             async for chunk in self._pipeline.synthesize_stream(
                 event.text, voice=voice, language=language
             ):
                 if not chunk:
                     continue
+                if not audio_started:
+                    await self.write_event(
+                        AudioStart(rate=sample_rate, width=2, channels=1).event()
+                    )
+                    audio_started = True
                 if first_audio_at is None:
                     first_audio_at = time.perf_counter()
                 chunk_count += 1
@@ -162,6 +167,8 @@ class ChatterboxEventHandler(AsyncEventHandler):
                     AudioChunk(audio=chunk, rate=sample_rate, width=2, channels=1).event()
                 )
 
+            if not audio_started:
+                await self.write_event(AudioStart(rate=sample_rate, width=2, channels=1).event())
             await self.write_event(AudioStop().event())
             duration = time.perf_counter() - request_start
             first_audio_seconds = None

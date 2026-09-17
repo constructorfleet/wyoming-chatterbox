@@ -27,7 +27,7 @@ class StandardBackend(ChatterboxBackend):
         self._device = device
         self._settings = settings
         self._model: object | None = None
-        self._prepared_audio_prompt_key: tuple[str, float] | None = None
+        self._prepared_audio_prompt_key: tuple[object, ...] | None = None
 
     # -- lifecycle --------------------------------------------------------
 
@@ -53,10 +53,18 @@ class StandardBackend(ChatterboxBackend):
     def warmup_voice(self, voice_path: str) -> None:
         self._prepare_audio_prompt(voice_path, phase="warmup")
 
-    def _prepare_audio_prompt(self, audio_prompt_path: str, *, phase: str) -> None:
+    def _voice_preparation_cache_key(
+        self, normalized_path: str, *, language: str | None = None
+    ) -> tuple[object, ...]:
+        del language
+        return (normalized_path, float(self._settings.chatterbox_exaggeration))
+
+    def _prepare_audio_prompt(
+        self, audio_prompt_path: str, *, phase: str, language: str | None = None
+    ) -> None:
         self._ensure_loaded()
         normalized_path = str(Path(audio_prompt_path))
-        key = (normalized_path, float(self._settings.chatterbox_exaggeration))
+        key = self._voice_preparation_cache_key(normalized_path, language=language)
         if self._prepared_audio_prompt_key == key:
             count_voice_preparation_cache(self.variant, "hit")
             logger.debug(

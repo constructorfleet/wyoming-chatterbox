@@ -40,7 +40,7 @@ class MultilingualBackend(ChatterboxBackend):
         self._device = device
         self._settings = settings
         self._model: object | None = None
-        self._prepared_audio_prompt_key: tuple[str, float] | None = None
+        self._prepared_audio_prompt_key: tuple[object, ...] | None = None
 
     # -- lifecycle --------------------------------------------------------
 
@@ -66,10 +66,21 @@ class MultilingualBackend(ChatterboxBackend):
     def warmup_voice(self, voice_path: str) -> None:
         self._prepare_audio_prompt(voice_path, phase="warmup")
 
-    def _prepare_audio_prompt(self, audio_prompt_path: str, *, phase: str) -> None:
+    def _voice_preparation_cache_key(
+        self, normalized_path: str, *, language: str | None = None
+    ) -> tuple[object, ...]:
+        return (
+            normalized_path,
+            float(self._settings.chatterbox_exaggeration),
+            (language or self._settings.chatterbox_default_language).lower(),
+        )
+
+    def _prepare_audio_prompt(
+        self, audio_prompt_path: str, *, phase: str, language: str | None = None
+    ) -> None:
         self._ensure_loaded()
         normalized_path = str(Path(audio_prompt_path))
-        key = (normalized_path, float(self._settings.chatterbox_exaggeration))
+        key = self._voice_preparation_cache_key(normalized_path, language=language)
         if self._prepared_audio_prompt_key == key:
             count_voice_preparation_cache(self.variant, "hit")
             logger.debug(
@@ -131,7 +142,11 @@ class MultilingualBackend(ChatterboxBackend):
         gen_kwargs.update(kwargs)
         audio_prompt_path = gen_kwargs.get("audio_prompt_path")
         if audio_prompt_path:
-            self._prepare_audio_prompt(str(audio_prompt_path), phase="request")
+            self._prepare_audio_prompt(
+                str(audio_prompt_path),
+                phase="request",
+                language=str(language),
+            )
             if not self._forward_audio_prompt_to_generate():
                 gen_kwargs.pop("audio_prompt_path", None)
         assert self._model is not None  # satisfied by _ensure_loaded

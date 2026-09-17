@@ -200,13 +200,17 @@ async def test_synthesize_records_error_metrics(server_settings, monkeypatch):
     try:
         async with AsyncTcpClient("127.0.0.1", port) as client:
             await client.write_event(Synthesize(text="Hello world.").event())
+            saw_audio_start = False
             while True:
                 event = await asyncio.wait_for(client.read_event(), timeout=5)
+                if AudioStart.is_type(event.type):
+                    saw_audio_start = True
                 if event.type == "error":
                     break
     finally:
         await _shutdown(server)
 
+    assert saw_audio_start is False
     assert len(records) == 1
     assert records[0]["variant"] == "standard"
     assert records[0]["status"] == "error"

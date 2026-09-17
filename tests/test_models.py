@@ -343,6 +343,19 @@ def test_multilingual_rebuilds_voice_prompt_when_exaggeration_changes(monkeypatc
     assert model.prepare_conditionals.call_count == 2
 
 
+def test_multilingual_rebuilds_voice_prompt_when_language_changes(monkeypatch, settings):
+    model = MagicMock()
+    model.sr = 24000
+    model.generate.return_value = np.zeros(2400, dtype=np.float32)
+    _install_fake_multilingual(monkeypatch, model)
+
+    backend = MultilingualBackend("cpu", settings)
+    backend.generate("bonjour", language="fr", audio_prompt_path="/voices/alice.wav")
+    backend.generate("hello", language="en", audio_prompt_path="/voices/alice.wav")
+
+    assert model.prepare_conditionals.call_count == 2
+
+
 def test_multilingual_generate_preserves_empty_voice_prompt(monkeypatch, settings):
     model = MagicMock()
     model.sr = 24000
