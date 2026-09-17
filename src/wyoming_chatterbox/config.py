@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
     log_format: str = "text"
+    prometheus_enabled: bool = False
+    prometheus_host: str = "0.0.0.0"
+    prometheus_port: int = 9100
     hf_token: str = ""
 
     @field_validator("chatterbox_device")
@@ -101,6 +104,7 @@ class Settings(BaseSettings):
 
     @field_validator(
         "wyoming_port",
+        "prometheus_port",
         "wyoming_audio_chunk_ms",
         "chatterbox_segment_min_chars",
         "chatterbox_segment_target_chars",

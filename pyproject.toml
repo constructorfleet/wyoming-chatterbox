@@ -19,6 +19,7 @@ classifiers = [
     "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
 dependencies = [
+    "prometheus-client>=0.26.0",
     "wyoming>=1.5.4",
     "pydantic-settings>=2.0",
     "numpy>=1.24",

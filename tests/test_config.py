@@ -18,6 +18,9 @@ def test_defaults():
     assert s.chatterbox_streaming_mode == "segmented"
     assert s.chatterbox_seed is None
     assert s.log_level == "INFO"
+    assert s.prometheus_enabled is False
+    assert s.prometheus_host == "0.0.0.0"
+    assert s.prometheus_port == 9100
 
 
 def test_env_var_parsing(monkeypatch):
@@ -25,11 +28,15 @@ def test_env_var_parsing(monkeypatch):
     monkeypatch.setenv("CHATTERBOX_VARIANT", "turbo")
     monkeypatch.setenv("CHATTERBOX_DEVICE", "cpu")
     monkeypatch.setenv("CHATTERBOX_SEED", "42")
+    monkeypatch.setenv("PROMETHEUS_ENABLED", "true")
+    monkeypatch.setenv("PROMETHEUS_PORT", "9200")
     s = Settings()
     assert s.wyoming_port == 12345
     assert s.chatterbox_variant == "turbo"
     assert s.chatterbox_device == "cpu"
     assert s.chatterbox_seed == 42
+    assert s.prometheus_enabled is True
+    assert s.prometheus_port == 9200
 
 
 def test_case_insensitive_env(monkeypatch):
