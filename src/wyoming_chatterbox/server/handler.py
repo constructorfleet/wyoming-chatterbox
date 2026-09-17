@@ -167,7 +167,8 @@ class ChatterboxEventHandler(AsyncEventHandler):
                     AudioChunk(audio=chunk, rate=sample_rate, width=2, channels=1).event()
                 )
 
-            await self.write_event(AudioStop().event())
+            if audio_started:
+                await self.write_event(AudioStop().event())
             duration = time.perf_counter() - request_start
             first_audio_seconds = None
             if first_audio_at is not None:
