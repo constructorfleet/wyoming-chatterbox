@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from wyoming_chatterbox.config import Settings
 from wyoming_chatterbox import metrics
+from wyoming_chatterbox.config import Settings
 
 
 def test_start_metrics_server_disabled(monkeypatch):
