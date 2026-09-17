@@ -31,7 +31,8 @@ class TurboBackend(StandardBackend):
     def _prepare_audio_prompt(self, audio_prompt_path: str) -> None:
         self._ensure_loaded()
         normalized_path = str(Path(audio_prompt_path))
-        if self._prepared_audio_prompt_path == normalized_path:
+        key = (normalized_path, float(self._settings.chatterbox_exaggeration))
+        if self._prepared_audio_prompt_key == key:
             return
         assert self._model is not None  # satisfied by _ensure_loaded
         self._model.prepare_conditionals(  # type: ignore[union-attr]
@@ -39,7 +40,7 @@ class TurboBackend(StandardBackend):
             exaggeration=self._settings.chatterbox_exaggeration,
             norm_loudness=True,
         )
-        self._prepared_audio_prompt_path = normalized_path
+        self._prepared_audio_prompt_key = key
 
     def _build_generate_kwargs(self) -> dict[str, object]:
         kwargs = super()._build_generate_kwargs()

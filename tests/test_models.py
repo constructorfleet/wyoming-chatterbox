@@ -250,6 +250,20 @@ def test_generate_reuses_cached_voice_prompt(monkeypatch, settings):
     )
 
 
+def test_generate_rebuilds_voice_prompt_when_exaggeration_changes(monkeypatch, settings):
+    model = MagicMock()
+    model.sr = 24000
+    model.generate.return_value = np.zeros(2400, dtype=np.float32)
+    _install_fake_chatterbox(monkeypatch, model)
+
+    backend = StandardBackend("cpu", settings)
+    backend.generate("hi", audio_prompt_path="/voices/alice.wav")
+    settings.chatterbox_exaggeration = 0.7
+    backend.generate("again", audio_prompt_path="/voices/alice.wav")
+
+    assert model.prepare_conditionals.call_count == 2
+
+
 def test_generate_preserves_empty_voice_prompt(monkeypatch, settings):
     model = MagicMock()
     model.sr = 24000
@@ -281,6 +295,20 @@ def test_turbo_generate_reuses_cached_voice_prompt(monkeypatch, settings):
     )
 
 
+def test_turbo_rebuilds_voice_prompt_when_exaggeration_changes(monkeypatch, settings):
+    model = MagicMock()
+    model.sr = 24000
+    model.generate.return_value = np.zeros(2400, dtype=np.float32)
+    _install_fake_turbo(monkeypatch, model)
+
+    backend = TurboBackend("cpu", settings)
+    backend.generate("hi", audio_prompt_path="/voices/alice.wav")
+    settings.chatterbox_exaggeration = 0.7
+    backend.generate("again", audio_prompt_path="/voices/alice.wav")
+
+    assert model.prepare_conditionals.call_count == 2
+
+
 def test_multilingual_generate_reuses_cached_voice_prompt(monkeypatch, settings):
     model = MagicMock()
     model.sr = 24000
@@ -295,6 +323,20 @@ def test_multilingual_generate_reuses_cached_voice_prompt(monkeypatch, settings)
         "/voices/alice.wav",
         exaggeration=settings.chatterbox_exaggeration,
     )
+
+
+def test_multilingual_rebuilds_voice_prompt_when_exaggeration_changes(monkeypatch, settings):
+    model = MagicMock()
+    model.sr = 24000
+    model.generate.return_value = np.zeros(2400, dtype=np.float32)
+    _install_fake_multilingual(monkeypatch, model)
+
+    backend = MultilingualBackend("cpu", settings)
+    backend.generate("bonjour", language="fr", audio_prompt_path="/voices/alice.wav")
+    settings.chatterbox_exaggeration = 0.7
+    backend.generate("salut", language="fr", audio_prompt_path="/voices/alice.wav")
+
+    assert model.prepare_conditionals.call_count == 2
 
 
 def test_multilingual_generate_preserves_empty_voice_prompt(monkeypatch, settings):

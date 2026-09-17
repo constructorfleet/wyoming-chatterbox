@@ -25,7 +25,7 @@ class StandardBackend(ChatterboxBackend):
         self._device = device
         self._settings = settings
         self._model: object | None = None
-        self._prepared_audio_prompt_path: str | None = None
+        self._prepared_audio_prompt_key: tuple[str, float] | None = None
 
     # -- lifecycle --------------------------------------------------------
 
@@ -36,6 +36,7 @@ class StandardBackend(ChatterboxBackend):
 
     def unload(self) -> None:
         self._model = None
+        self._prepared_audio_prompt_key = None
 
     @property
     def is_loaded(self) -> bool:
@@ -53,14 +54,15 @@ class StandardBackend(ChatterboxBackend):
     def _prepare_audio_prompt(self, audio_prompt_path: str) -> None:
         self._ensure_loaded()
         normalized_path = str(Path(audio_prompt_path))
-        if self._prepared_audio_prompt_path == normalized_path:
+        key = (normalized_path, float(self._settings.chatterbox_exaggeration))
+        if self._prepared_audio_prompt_key == key:
             return
         assert self._model is not None  # satisfied by _ensure_loaded
         self._model.prepare_conditionals(  # type: ignore[union-attr]
             normalized_path,
             exaggeration=self._settings.chatterbox_exaggeration,
         )
-        self._prepared_audio_prompt_path = normalized_path
+        self._prepared_audio_prompt_key = key
 
     def _build_generate_kwargs(self) -> dict[str, object]:
         return {
