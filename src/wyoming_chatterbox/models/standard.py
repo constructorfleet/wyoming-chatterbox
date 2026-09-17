@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import time
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 
@@ -107,36 +106,9 @@ class StandardBackend(ChatterboxBackend):
             "temperature": self._settings.chatterbox_temperature,
         }
 
-    def _generate_with_model_prompt_cache(self, text: str, gen_kwargs: dict[str, object]) -> Any:
-        assert self._model is not None  # satisfied by _ensure_loaded
-        audio_prompt_path = gen_kwargs.get("audio_prompt_path")
-        prepare_conditionals: Any = getattr(self._model, "prepare_conditionals", None)
-        if not audio_prompt_path or prepare_conditionals is None:
-            return self._model.generate(text, **gen_kwargs)  # type: ignore[union-attr]
-
-        expected_key = (
-            str(Path(str(audio_prompt_path))),
-            float(self._settings.chatterbox_exaggeration),
-        )
-
-        def _prepare_conditionals_with_cache(
-            prompt_path: str, *args: object, **kwargs: object
-        ) -> None:
-            exaggeration = kwargs.get("exaggeration")
-            current_exaggeration = self._settings.chatterbox_exaggeration
-            if isinstance(exaggeration, (int, float, str)):
-                current_exaggeration = float(exaggeration)
-            current_key = (str(Path(prompt_path)), float(current_exaggeration))
-            if current_key == expected_key:
-                return None
-            prepare_conditionals(prompt_path, *args, **kwargs)
-            return None
-
-        self._model.prepare_conditionals = _prepare_conditionals_with_cache  # type: ignore[union-attr]
-        try:
-            return self._model.generate(text, **gen_kwargs)  # type: ignore[union-attr]
-        finally:
-            self._model.prepare_conditionals = prepare_conditionals  # type: ignore[union-attr]
+    def _forward_audio_prompt_to_generate(self) -> bool:
+        """Return True when the underlying model must receive ``audio_prompt_path``."""
+        return False
 
     def generate(self, text: str, **kwargs: object) -> np.ndarray:
         self._ensure_loaded()
@@ -145,9 +117,11 @@ class StandardBackend(ChatterboxBackend):
         audio_prompt_path = gen_kwargs.get("audio_prompt_path")
         if audio_prompt_path:
             self._prepare_audio_prompt(str(audio_prompt_path), phase="request")
+            if not self._forward_audio_prompt_to_generate():
+                gen_kwargs.pop("audio_prompt_path", None)
         gen_kwargs.pop("language", None)  # not supported by the standard model
         assert self._model is not None  # satisfied by _ensure_loaded
-        audio: Any = self._generate_with_model_prompt_cache(text, gen_kwargs)
+        audio = self._model.generate(text, **gen_kwargs)  # type: ignore[union-attr]
         if hasattr(audio, "detach"):
             audio = audio.detach().cpu().numpy()
         return np.asarray(audio, dtype=np.float32)

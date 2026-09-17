@@ -99,7 +99,15 @@ def start_metrics_server(settings: Settings) -> None:
     with _METRICS_LOCK:
         if _METRICS_STARTED:
             return
-        start_http_server(port=settings.prometheus_port, addr=settings.prometheus_host)
+        try:
+            start_http_server(port=settings.prometheus_port, addr=settings.prometheus_host)
+        except Exception:  # noqa: BLE001 - metrics are optional
+            logger.exception(
+                "Failed to start Prometheus metrics server on %s:%s",
+                settings.prometheus_host,
+                settings.prometheus_port,
+            )
+            return
         _METRICS_STARTED = True
     logger.info(
         "Started Prometheus metrics server on %s:%s",

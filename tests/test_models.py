@@ -231,7 +231,7 @@ def test_generate_passes_voice_prompt(monkeypatch, settings):
         exaggeration=settings.chatterbox_exaggeration,
     )
     _, kwargs = model.generate.call_args
-    assert kwargs["audio_prompt_path"] == "/voices/alice.wav"
+    assert "audio_prompt_path" not in kwargs
 
 
 def test_generate_reuses_cached_voice_prompt(monkeypatch, settings):
@@ -293,6 +293,8 @@ def test_turbo_generate_reuses_cached_voice_prompt(monkeypatch, settings):
         exaggeration=settings.chatterbox_exaggeration,
         norm_loudness=True,
     )
+    _, kwargs = model.generate.call_args
+    assert "audio_prompt_path" not in kwargs
 
 
 def test_turbo_rebuilds_voice_prompt_when_exaggeration_changes(monkeypatch, settings):
@@ -323,6 +325,8 @@ def test_multilingual_generate_reuses_cached_voice_prompt(monkeypatch, settings)
         "/voices/alice.wav",
         exaggeration=settings.chatterbox_exaggeration,
     )
+    _, kwargs = model.generate.call_args
+    assert "audio_prompt_path" not in kwargs
 
 
 def test_multilingual_rebuilds_voice_prompt_when_exaggeration_changes(monkeypatch, settings):

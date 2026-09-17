@@ -38,3 +38,16 @@ def test_start_metrics_server_only_once(monkeypatch):
     metrics.start_metrics_server(settings)
 
     assert len(called) == 1
+
+
+def test_start_metrics_server_failure_is_non_fatal(monkeypatch):
+    monkeypatch.setattr(
+        metrics,
+        "start_http_server",
+        lambda **kwargs: (_ for _ in ()).throw(OSError("port in use")),
+    )
+    monkeypatch.setattr(metrics, "_METRICS_STARTED", False)
+
+    metrics.start_metrics_server(Settings(prometheus_enabled=True))
+
+    assert metrics._METRICS_STARTED is False
