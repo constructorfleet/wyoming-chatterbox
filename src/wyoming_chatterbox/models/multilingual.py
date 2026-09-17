@@ -88,9 +88,10 @@ class MultilingualBackend(ChatterboxBackend):
         language = kwargs.pop("language", None) or self._settings.chatterbox_default_language
         gen_kwargs["language_id"] = language
         gen_kwargs.update(kwargs)
-        audio_prompt_path = gen_kwargs.pop("audio_prompt_path", None)
+        audio_prompt_path = gen_kwargs.get("audio_prompt_path")
         if audio_prompt_path:
             self._prepare_audio_prompt(str(audio_prompt_path))
+            gen_kwargs.pop("audio_prompt_path", None)
         assert self._model is not None  # satisfied by _ensure_loaded
         audio = self._model.generate(text, **gen_kwargs)  # type: ignore[union-attr]
         if hasattr(audio, "detach"):

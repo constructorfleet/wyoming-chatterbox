@@ -250,6 +250,20 @@ def test_generate_reuses_cached_voice_prompt(monkeypatch, settings):
     )
 
 
+def test_generate_preserves_empty_voice_prompt(monkeypatch, settings):
+    model = MagicMock()
+    model.sr = 24000
+    model.generate.return_value = np.zeros(2400, dtype=np.float32)
+    _install_fake_chatterbox(monkeypatch, model)
+
+    backend = StandardBackend("cpu", settings)
+    backend.generate("hi", audio_prompt_path="")
+
+    model.prepare_conditionals.assert_not_called()
+    _, kwargs = model.generate.call_args
+    assert kwargs["audio_prompt_path"] == ""
+
+
 def test_turbo_generate_reuses_cached_voice_prompt(monkeypatch, settings):
     model = MagicMock()
     model.sr = 24000
@@ -281,3 +295,17 @@ def test_multilingual_generate_reuses_cached_voice_prompt(monkeypatch, settings)
         "/voices/alice.wav",
         exaggeration=settings.chatterbox_exaggeration,
     )
+
+
+def test_multilingual_generate_preserves_empty_voice_prompt(monkeypatch, settings):
+    model = MagicMock()
+    model.sr = 24000
+    model.generate.return_value = np.zeros(2400, dtype=np.float32)
+    _install_fake_multilingual(monkeypatch, model)
+
+    backend = MultilingualBackend("cpu", settings)
+    backend.generate("bonjour", language="fr", audio_prompt_path="")
+
+    model.prepare_conditionals.assert_not_called()
+    _, kwargs = model.generate.call_args
+    assert kwargs["audio_prompt_path"] == ""

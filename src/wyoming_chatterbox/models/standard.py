@@ -73,9 +73,10 @@ class StandardBackend(ChatterboxBackend):
         self._ensure_loaded()
         gen_kwargs = self._build_generate_kwargs()
         gen_kwargs.update(kwargs)
-        audio_prompt_path = gen_kwargs.pop("audio_prompt_path", None)
+        audio_prompt_path = gen_kwargs.get("audio_prompt_path")
         if audio_prompt_path:
             self._prepare_audio_prompt(str(audio_prompt_path))
+            gen_kwargs.pop("audio_prompt_path", None)
         gen_kwargs.pop("language", None)  # not supported by the standard model
         assert self._model is not None  # satisfied by _ensure_loaded
         audio = self._model.generate(text, **gen_kwargs)  # type: ignore[union-attr]
