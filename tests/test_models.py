@@ -231,7 +231,7 @@ def test_generate_passes_voice_prompt(monkeypatch, settings):
         exaggeration=settings.chatterbox_exaggeration,
     )
     _, kwargs = model.generate.call_args
-    assert "audio_prompt_path" not in kwargs
+    assert kwargs["audio_prompt_path"] == "/voices/alice.wav"
 
 
 def test_generate_reuses_cached_voice_prompt(monkeypatch, settings):
