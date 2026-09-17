@@ -8,6 +8,7 @@ import logging
 import sys
 
 from wyoming_chatterbox.config import Settings
+from wyoming_chatterbox.metrics import start_metrics_server
 from wyoming_chatterbox.server.server import run_server
 
 
@@ -40,6 +41,7 @@ def main() -> None:
     """Load settings, configure logging and run the server."""
     settings = Settings()
     setup_logging(settings)
+    start_metrics_server(settings)
     try:
         asyncio.run(run_server(settings))
     except KeyboardInterrupt:  # pragma: no cover - interactive

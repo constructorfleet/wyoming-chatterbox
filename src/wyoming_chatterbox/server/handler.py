@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 
 from wyoming.audio import AudioChunk, AudioStart, AudioStop
 from wyoming.error import Error
@@ -20,6 +21,7 @@ from wyoming.server import AsyncEventHandler
 from wyoming.tts import Synthesize
 
 from wyoming_chatterbox.config import Settings
+from wyoming_chatterbox.metrics import observe_synthesis_request
 from wyoming_chatterbox.models.base import ChatterboxBackend
 from wyoming_chatterbox.synthesis.pipeline import SynthesisPipeline
 from wyoming_chatterbox.voices.manager import VoiceManager
@@ -117,19 +119,32 @@ class ChatterboxEventHandler(AsyncEventHandler):
     # -- synthesize -------------------------------------------------------
 
     async def _handle_synthesize(self, event: Synthesize) -> None:
+        request_start = time.perf_counter()
+        first_audio_at: float | None = None
+        chunk_count = 0
+        audio_bytes = 0
+        variant = self._active_variant
+        voice = None
+        language = self._settings.chatterbox_default_language
         try:
             backend = self._backends[self._active_variant]
             if not backend.is_loaded:
                 backend.load()
 
-            voice = None
-            language = self._settings.chatterbox_default_language
             if event.voice is not None:
                 voice = event.voice.name or None
                 if event.voice.language:
                     language = event.voice.language
             if not voice and self._settings.chatterbox_default_voice:
                 voice = self._settings.chatterbox_default_voice
+
+            logger.info(
+                "Starting synthesis variant=%s text_chars=%d voice=%s language=%s",
+                variant,
+                len(event.text),
+                voice or "-",
+                language,
+            )
 
             sample_rate = backend.sample_rate
             await self.write_event(AudioStart(rate=sample_rate, width=2, channels=1).event())
@@ -139,11 +154,55 @@ class ChatterboxEventHandler(AsyncEventHandler):
             ):
                 if not chunk:
                     continue
+                if first_audio_at is None:
+                    first_audio_at = time.perf_counter()
+                chunk_count += 1
+                audio_bytes += len(chunk)
                 await self.write_event(
                     AudioChunk(audio=chunk, rate=sample_rate, width=2, channels=1).event()
                 )
 
             await self.write_event(AudioStop().event())
+            duration = time.perf_counter() - request_start
+            first_audio_seconds = None
+            if first_audio_at is not None:
+                first_audio_seconds = first_audio_at - request_start
+            observe_synthesis_request(
+                variant=variant,
+                status="success",
+                duration_seconds=duration,
+                first_audio_seconds=first_audio_seconds,
+                chunk_count=chunk_count,
+                audio_bytes=audio_bytes,
+            )
+            logger.info(
+                "Completed synthesis variant=%s text_chars=%d voice=%s language=%s chunks=%d "
+                "audio_bytes=%d first_audio_ms=%s total_ms=%.1f",
+                variant,
+                len(event.text),
+                voice or "-",
+                language,
+                chunk_count,
+                audio_bytes,
+                f"{first_audio_seconds * 1000.0:.1f}" if first_audio_seconds is not None else "n/a",
+                duration * 1000.0,
+            )
         except Exception as exc:  # noqa: BLE001 - report all failures to client
-            logger.exception("Synthesis error")
+            duration = time.perf_counter() - request_start
+            observe_synthesis_request(
+                variant=variant,
+                status="error",
+                duration_seconds=duration,
+                first_audio_seconds=None,
+                chunk_count=chunk_count,
+                audio_bytes=audio_bytes,
+            )
+            logger.exception(
+                "Synthesis error variant=%s text_chars=%d voice=%s language=%s total_ms=%.1f",
+                variant,
+                len(event.text),
+                voice or "-",
+                language,
+                duration * 1000.0,
+            )
             await self.write_event(Error(text=str(exc)).event())

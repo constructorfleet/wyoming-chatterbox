@@ -16,6 +16,7 @@ from wyoming.server import AsyncTcpServer
 from wyoming.tts import Synthesize, SynthesizeVoice
 
 from wyoming_chatterbox.config import Settings
+from wyoming_chatterbox.server import handler as server_handler
 from wyoming_chatterbox.server.handler import ChatterboxEventHandler
 from wyoming_chatterbox.server.server import _warmup_default_voice
 from wyoming_chatterbox.voices.manager import VoiceManager
@@ -152,3 +153,30 @@ def test_warmup_default_voice(tmp_path):
     _warmup_default_voice({"standard": backend}, settings, VoiceManager(voices))
 
     backend.warmup_voice.assert_called_once_with(str(voice_path))
+
+
+async def test_synthesize_records_metrics(server_settings, monkeypatch):
+    records = []
+
+    def _record(**kwargs):
+        records.append(kwargs)
+
+    monkeypatch.setattr(server_handler, "observe_synthesis_request", _record)
+
+    server, port, _ = await _start_server(server_settings)
+    try:
+        async with AsyncTcpClient("127.0.0.1", port) as client:
+            await client.write_event(Synthesize(text="Hello world. This is a test.").event())
+            while True:
+                event = await asyncio.wait_for(client.read_event(), timeout=5)
+                if AudioStop.is_type(event.type):
+                    break
+    finally:
+        await _shutdown(server)
+
+    assert len(records) == 1
+    assert records[0]["variant"] == "standard"
+    assert records[0]["status"] == "success"
+    assert records[0]["chunk_count"] > 0
+    assert records[0]["audio_bytes"] > 0
+    assert records[0]["first_audio_seconds"] is not None

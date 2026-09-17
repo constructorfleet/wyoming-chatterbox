@@ -8,6 +8,7 @@ services:
     restart: unless-stopped
     ports:
       - "10200:10200"
+      # - "9100:9100" # Prometheus metrics
     volumes:
       - ./models:/models
       - ./voices:/voices
@@ -18,6 +19,7 @@ services:
       CHATTERBOX_STREAMING_MODE: segmented
       CHATTERBOX_DEFAULT_LANGUAGE: en
       LOG_LEVEL: INFO
+      PROMETHEUS_ENABLED: "false"
     # For GPU acceleration, use target: cuda in build and uncomment below.
     # deploy:
     #   resources:

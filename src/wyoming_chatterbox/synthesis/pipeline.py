@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from collections.abc import AsyncIterator
 from concurrent.futures import ThreadPoolExecutor
 
@@ -15,6 +16,7 @@ from wyoming_chatterbox.audio.processing import (
     make_silence,
 )
 from wyoming_chatterbox.config import Settings
+from wyoming_chatterbox.metrics import observe_segment_duration
 from wyoming_chatterbox.models.base import ChatterboxBackend
 from wyoming_chatterbox.segmentation.segmenter import TextSegmenter
 from wyoming_chatterbox.voices.manager import VoiceManager
@@ -167,7 +169,17 @@ class SynthesisPipeline:
             seg_seed = base_seed + seq
             _apply_seed(seg_seed)
             kwargs["seed"] = seg_seed
+        start_time = time.perf_counter()
         audio = self._backend.generate(text, **kwargs)
+        duration = time.perf_counter() - start_time
+        observe_segment_duration(self._backend.variant, duration)
+        logger.debug(
+            "Synthesized segment variant=%s seq=%d chars=%d duration_ms=%.1f",
+            self._backend.variant,
+            seq,
+            len(text),
+            duration * 1000.0,
+        )
         return seq, np.asarray(audio, dtype=np.float32).reshape(-1)
 
     def _audio_to_chunks(self, audio: np.ndarray) -> list[bytes]:

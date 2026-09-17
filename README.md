@@ -15,6 +15,9 @@ use with [Home Assistant](https://www.home-assistant.io/).
 - **Named reference voices** — drop `*.wav` files into the voices directory and select them
   by name (with path-traversal protection). When preload is enabled, the default voice is
   warmed at startup so the first request avoids re-encoding the reference clip.
+- **Observability** — request/segment timing logs plus optional Prometheus metrics for
+  synthesis latency, first-audio latency, audio output size, segment duration, and voice
+  preparation cache behavior.
 - **Multilingual** — the multilingual backend exposes per-request language selection.
 - **Fully mockable** — the Chatterbox dependency is imported lazily so the package (and its
   test suite) runs without downloading any models.
@@ -77,9 +80,23 @@ a selectable TTS program; each `*.wav` in the voices directory appears as a voic
 | `CHATTERBOX_SEED` | _(none)_ | Base RNG seed (segment `n` uses `seed + n`) |
 | `LOG_LEVEL` | `INFO` | Logging level |
 | `LOG_FORMAT` | `text` | `text` or `json` |
+| `PROMETHEUS_ENABLED` | `false` | Start Prometheus metrics exporter |
+| `PROMETHEUS_HOST` | `0.0.0.0` | Bind host for metrics exporter |
+| `PROMETHEUS_PORT` | `9100` | Bind port for metrics exporter |
 
 See [`.env.example`](.env.example) for the full list including generation and audio-boundary
 parameters.
+
+## Observability
+
+When enabled, the Prometheus exporter listens on the configured host/port and exposes metrics
+for:
+
+- synthesis request counts and total duration
+- time to first audio chunk
+- chunks and bytes emitted per request
+- per-segment synthesis duration
+- reference-voice preparation duration and cache hit/miss counts
 
 ## Streaming modes
 
