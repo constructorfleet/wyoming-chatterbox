@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import numpy as np
 
@@ -37,6 +38,7 @@ class MultilingualBackend(ChatterboxBackend):
         self._device = device
         self._settings = settings
         self._model: object | None = None
+        self._prepared_audio_prompt_path: str | None = None
 
     # -- lifecycle --------------------------------------------------------
 
@@ -58,6 +60,21 @@ class MultilingualBackend(ChatterboxBackend):
         if not self.is_loaded:
             self.load()
 
+    def warmup_voice(self, voice_path: str) -> None:
+        self._prepare_audio_prompt(voice_path)
+
+    def _prepare_audio_prompt(self, audio_prompt_path: str) -> None:
+        self._ensure_loaded()
+        normalized_path = str(Path(audio_prompt_path))
+        if self._prepared_audio_prompt_path == normalized_path:
+            return
+        assert self._model is not None  # satisfied by _ensure_loaded
+        self._model.prepare_conditionals(  # type: ignore[union-attr]
+            normalized_path,
+            exaggeration=self._settings.chatterbox_exaggeration,
+        )
+        self._prepared_audio_prompt_path = normalized_path
+
     def _build_generate_kwargs(self) -> dict[str, object]:
         return {
             "exaggeration": self._settings.chatterbox_exaggeration,
@@ -71,6 +88,9 @@ class MultilingualBackend(ChatterboxBackend):
         language = kwargs.pop("language", None) or self._settings.chatterbox_default_language
         gen_kwargs["language_id"] = language
         gen_kwargs.update(kwargs)
+        audio_prompt_path = gen_kwargs.pop("audio_prompt_path", None)
+        if audio_prompt_path:
+            self._prepare_audio_prompt(str(audio_prompt_path))
         assert self._model is not None  # satisfied by _ensure_loaded
         audio = self._model.generate(text, **gen_kwargs)  # type: ignore[union-attr]
         if hasattr(audio, "detach"):

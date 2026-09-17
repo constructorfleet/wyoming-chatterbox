@@ -9,11 +9,32 @@ import signal
 from wyoming.server import AsyncTcpServer
 
 from wyoming_chatterbox.config import Settings
+from wyoming_chatterbox.models.base import ChatterboxBackend
 from wyoming_chatterbox.models.factory import create_backend, resolve_device
 from wyoming_chatterbox.server.handler import ChatterboxEventHandler
 from wyoming_chatterbox.voices.manager import VoiceManager
 
 logger = logging.getLogger(__name__)
+
+
+def _warmup_default_voice(
+    backends: dict[str, ChatterboxBackend], settings: Settings, voice_manager: VoiceManager
+) -> None:
+    if not settings.chatterbox_default_voice:
+        return
+    try:
+        voice_path = str(voice_manager.get_voice_path(settings.chatterbox_default_voice))
+    except (ValueError, FileNotFoundError):
+        logger.warning("Default voice %r not found; skipping warmup", settings.chatterbox_default_voice)
+        return
+
+    for variant, backend in backends.items():
+        logger.info(
+            "Preloading default voice %s for %s...",
+            settings.chatterbox_default_voice,
+            variant,
+        )
+        backend.warmup_voice(voice_path)
 
 
 async def run_server(settings: Settings) -> None:
@@ -24,12 +45,12 @@ async def run_server(settings: Settings) -> None:
     variants = settings.active_variants
     backends = {v: create_backend(v, device, settings) for v in variants}
 
+    voice_manager = VoiceManager(settings.chatterbox_voices_dir)
     if settings.chatterbox_preload:
         for variant, backend in backends.items():
             logger.info("Preloading %s model...", variant)
             backend.load()
-
-    voice_manager = VoiceManager(settings.chatterbox_voices_dir)
+        _warmup_default_voice(backends, settings, voice_manager)
     default_variant = variants[0]
 
     server = AsyncTcpServer(host=settings.wyoming_host, port=settings.wyoming_port)

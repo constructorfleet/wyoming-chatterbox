@@ -34,6 +34,9 @@ class ChatterboxBackend(abc.ABC):
     def supported_languages(self) -> list[str]:
         """Return list of BCP-47 language codes supported by this backend."""
 
+    def warmup_voice(self, voice_path: str) -> None:
+        """Optionally precompute reference-voice conditionals."""
+
     def supports_language(self, lang: str) -> bool:
         """Return True if *lang* (case-insensitive) is supported."""
         return lang.lower() in {lng.lower() for lng in self.supported_languages()}

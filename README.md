@@ -13,7 +13,8 @@ use with [Home Assistant](https://www.home-assistant.io/).
 - **Segmented streaming synthesis** — incremental text segmentation with a bounded,
   ordered, parallel synthesis pipeline for low time-to-first-audio.
 - **Named reference voices** — drop `*.wav` files into the voices directory and select them
-  by name (with path-traversal protection).
+  by name (with path-traversal protection). When preload is enabled, the default voice is
+  warmed at startup so the first request avoids re-encoding the reference clip.
 - **Multilingual** — the multilingual backend exposes per-request language selection.
 - **Fully mockable** — the Chatterbox dependency is imported lazily so the package (and its
   test suite) runs without downloading any models.
@@ -61,7 +62,7 @@ a selectable TTS program; each `*.wav` in the voices directory appears as a voic
 | `CHATTERBOX_VARIANT` | `multilingual` | Variant: `standard`/`multilingual`/`turbo`/`nano` |
 | `CHATTERBOX_VARIANTS` | _(empty)_ | Comma-separated list to serve multiple variants |
 | `CHATTERBOX_DEVICE` | `auto` | `auto`/`cpu`/`cuda`/`mps` |
-| `CHATTERBOX_PRELOAD` | `true` | Load models at startup |
+| `CHATTERBOX_PRELOAD` | `true` | Load models at startup and warm the default voice if configured |
 | `CHATTERBOX_CACHE_DIR` | `/models` | Model cache directory |
 | `CHATTERBOX_VOICES_DIR` | `/voices` | Reference voice directory |
 | `CHATTERBOX_DEFAULT_VOICE` | _(empty)_ | Default reference voice name |

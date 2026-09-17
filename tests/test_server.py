@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import socket
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -16,6 +17,7 @@ from wyoming.tts import Synthesize, SynthesizeVoice
 
 from wyoming_chatterbox.config import Settings
 from wyoming_chatterbox.server.handler import ChatterboxEventHandler
+from wyoming_chatterbox.server.server import _warmup_default_voice
 from wyoming_chatterbox.voices.manager import VoiceManager
 
 
@@ -132,3 +134,21 @@ async def test_select_program_then_synthesize(server_settings):
             assert saw_stop
     finally:
         await _shutdown(server)
+
+
+def test_warmup_default_voice(tmp_path):
+    voices = tmp_path / "voices"
+    voices.mkdir()
+    voice_path = voices / "alice.wav"
+    voice_path.write_bytes(b"RIFF")
+    settings = Settings(
+        chatterbox_default_voice="alice",
+        chatterbox_voices_dir=str(voices),
+    )
+
+    backend = FakeBackend()
+    backend.warmup_voice = MagicMock()
+
+    _warmup_default_voice({"standard": backend}, settings, VoiceManager(voices))
+
+    backend.warmup_voice.assert_called_once_with(str(voice_path))

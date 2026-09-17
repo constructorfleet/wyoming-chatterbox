@@ -83,6 +83,15 @@ def _install_fake_chatterbox(monkeypatch, model):
     return tts_module
 
 
+def _install_fake_turbo(monkeypatch, model):
+    module = types.ModuleType("chatterbox.tts_turbo")
+    module.ChatterboxTurboTTS = MagicMock()
+    module.ChatterboxTurboTTS.from_pretrained.return_value = model
+    monkeypatch.setitem(sys.modules, "chatterbox", types.ModuleType("chatterbox"))
+    monkeypatch.setitem(sys.modules, "chatterbox.tts_turbo", module)
+    return module
+
+
 def test_lazy_load(monkeypatch, settings):
     model = MagicMock()
     model.sr = 24000
@@ -217,5 +226,42 @@ def test_generate_passes_voice_prompt(monkeypatch, settings):
 
     backend = StandardBackend("cpu", settings)
     backend.generate("hi", audio_prompt_path="/voices/alice.wav")
+    model.prepare_conditionals.assert_called_once_with(
+        "/voices/alice.wav",
+        exaggeration=settings.chatterbox_exaggeration,
+    )
     _, kwargs = model.generate.call_args
-    assert kwargs["audio_prompt_path"] == "/voices/alice.wav"
+    assert "audio_prompt_path" not in kwargs
+
+
+def test_generate_reuses_cached_voice_prompt(monkeypatch, settings):
+    model = MagicMock()
+    model.sr = 24000
+    model.generate.return_value = np.zeros(2400, dtype=np.float32)
+    _install_fake_chatterbox(monkeypatch, model)
+
+    backend = StandardBackend("cpu", settings)
+    backend.generate("hi", audio_prompt_path="/voices/alice.wav")
+    backend.generate("again", audio_prompt_path="/voices/alice.wav")
+
+    model.prepare_conditionals.assert_called_once_with(
+        "/voices/alice.wav",
+        exaggeration=settings.chatterbox_exaggeration,
+    )
+
+
+def test_turbo_generate_reuses_cached_voice_prompt(monkeypatch, settings):
+    model = MagicMock()
+    model.sr = 24000
+    model.generate.return_value = np.zeros(2400, dtype=np.float32)
+    _install_fake_turbo(monkeypatch, model)
+
+    backend = TurboBackend("cpu", settings)
+    backend.generate("hi", audio_prompt_path="/voices/alice.wav")
+    backend.generate("again", audio_prompt_path="/voices/alice.wav")
+
+    model.prepare_conditionals.assert_called_once_with(
+        "/voices/alice.wav",
+        exaggeration=settings.chatterbox_exaggeration,
+        norm_loudness=True,
+    )
