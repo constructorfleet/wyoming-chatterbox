@@ -265,3 +265,19 @@ def test_turbo_generate_reuses_cached_voice_prompt(monkeypatch, settings):
         exaggeration=settings.chatterbox_exaggeration,
         norm_loudness=True,
     )
+
+
+def test_multilingual_generate_reuses_cached_voice_prompt(monkeypatch, settings):
+    model = MagicMock()
+    model.sr = 24000
+    model.generate.return_value = np.zeros(2400, dtype=np.float32)
+    _install_fake_multilingual(monkeypatch, model)
+
+    backend = MultilingualBackend("cpu", settings)
+    backend.generate("bonjour", language="fr", audio_prompt_path="/voices/alice.wav")
+    backend.generate("salut", language="fr", audio_prompt_path="/voices/alice.wav")
+
+    model.prepare_conditionals.assert_called_once_with(
+        "/voices/alice.wav",
+        exaggeration=settings.chatterbox_exaggeration,
+    )
