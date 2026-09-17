@@ -37,7 +37,14 @@ def _warmup_default_voice(
             settings.chatterbox_default_voice,
             variant,
         )
-        backend.warmup_voice(voice_path)
+        try:
+            backend.warmup_voice(voice_path)
+        except Exception:  # noqa: BLE001 - warmup is best-effort
+            logger.exception(
+                "Failed to preload default voice %s for %s",
+                settings.chatterbox_default_voice,
+                variant,
+            )
 
 
 async def run_server(settings: Settings) -> None:
