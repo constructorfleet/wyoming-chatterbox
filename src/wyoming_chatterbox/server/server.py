@@ -25,7 +25,10 @@ def _warmup_default_voice(
     try:
         voice_path = str(voice_manager.get_voice_path(settings.chatterbox_default_voice))
     except (ValueError, FileNotFoundError):
-        logger.warning("Default voice %r not found; skipping warmup", settings.chatterbox_default_voice)
+        logger.warning(
+            "Default voice %r not found; skipping warmup",
+            settings.chatterbox_default_voice,
+        )
         return
 
     for variant, backend in backends.items():

@@ -36,6 +36,7 @@ class ChatterboxBackend(abc.ABC):
 
     def warmup_voice(self, voice_path: str) -> None:
         """Optionally precompute reference-voice conditionals."""
+        return None
 
     def supports_language(self, lang: str) -> bool:
         """Return True if *lang* (case-insensitive) is supported."""
