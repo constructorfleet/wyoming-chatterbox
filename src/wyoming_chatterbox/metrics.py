@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from threading import Lock
 
 from prometheus_client import Counter, Histogram, start_http_server
 
@@ -11,6 +12,7 @@ from wyoming_chatterbox.config import Settings
 logger = logging.getLogger(__name__)
 
 _METRICS_STARTED = False
+_METRICS_LOCK = Lock()
 
 _LATENCY_BUCKETS = (
     0.01,
@@ -92,10 +94,13 @@ VOICE_PREPARATION_CACHE = Counter(
 def start_metrics_server(settings: Settings) -> None:
     """Start the Prometheus exporter if enabled."""
     global _METRICS_STARTED
-    if not settings.prometheus_enabled or _METRICS_STARTED:
+    if not settings.prometheus_enabled:
         return
-    start_http_server(port=settings.prometheus_port, addr=settings.prometheus_host)
-    _METRICS_STARTED = True
+    with _METRICS_LOCK:
+        if _METRICS_STARTED:
+            return
+        start_http_server(port=settings.prometheus_port, addr=settings.prometheus_host)
+        _METRICS_STARTED = True
     logger.info(
         "Started Prometheus metrics server on %s:%s",
         settings.prometheus_host,

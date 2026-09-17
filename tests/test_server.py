@@ -48,6 +48,10 @@ def server_settings(tmp_path) -> Settings:
 
 async def _start_server(settings):
     backend = FakeBackend()
+    return await _start_server_with_backend(settings, backend)
+
+
+async def _start_server_with_backend(settings, backend):
     backend.load()
     backends = {"standard": backend}
     voice_manager = VoiceManager(settings.chatterbox_voices_dir)
@@ -180,3 +184,30 @@ async def test_synthesize_records_metrics(server_settings, monkeypatch):
     assert records[0]["chunk_count"] > 0
     assert records[0]["audio_bytes"] > 0
     assert records[0]["first_audio_seconds"] is not None
+
+
+async def test_synthesize_records_error_metrics(server_settings, monkeypatch):
+    records = []
+
+    def _record(**kwargs):
+        records.append(kwargs)
+
+    backend = FakeBackend()
+    backend.generate = MagicMock(side_effect=RuntimeError("boom"))
+    monkeypatch.setattr(server_handler, "observe_synthesis_request", _record)
+
+    server, port, _ = await _start_server_with_backend(server_settings, backend)
+    try:
+        async with AsyncTcpClient("127.0.0.1", port) as client:
+            await client.write_event(Synthesize(text="Hello world.").event())
+            while True:
+                event = await asyncio.wait_for(client.read_event(), timeout=5)
+                if event.type == "error":
+                    break
+    finally:
+        await _shutdown(server)
+
+    assert len(records) == 1
+    assert records[0]["variant"] == "standard"
+    assert records[0]["status"] == "error"
+    assert records[0]["audio_bytes"] == 0

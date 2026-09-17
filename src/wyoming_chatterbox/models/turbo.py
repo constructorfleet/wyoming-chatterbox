@@ -6,7 +6,6 @@ import logging
 import time
 from pathlib import Path
 
-from wyoming_chatterbox.config import Settings
 from wyoming_chatterbox.metrics import count_voice_preparation_cache, observe_voice_preparation
 from wyoming_chatterbox.models.standard import StandardBackend
 
@@ -21,9 +20,6 @@ class TurboBackend(StandardBackend):
     """Turbo variant — uses ChatterboxTurboTTS with capped cfg_weight."""
 
     variant = "turbo"
-
-    def __init__(self, device: str, settings: Settings) -> None:
-        super().__init__(device, settings)
 
     def load(self) -> None:
         from chatterbox.tts_turbo import ChatterboxTurboTTS  # lazy import
